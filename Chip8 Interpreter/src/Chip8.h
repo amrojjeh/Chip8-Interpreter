@@ -22,6 +22,13 @@ private:
 	unsigned char mKeys[16];
 	SDL_Surface* mSurface;
 	
+	// instruction variables
+	#define OP(instruction) ((instruction & 0xF000) >> 12)
+	#define X(instruction) ((instruction & 0x0F00) >> 8)
+	#define Y(instruction) ((instruction & 0x00F0) >> 4)
+	#define KK(instruction) (instruction & 0x00FF)
+	#define NNN(instruction) (instruction & 0x0FFF)
+	
 public:
 	Chip8(SDL_Surface* surface);
 	int loadFile(const char* file);

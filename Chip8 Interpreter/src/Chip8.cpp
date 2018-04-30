@@ -32,28 +32,42 @@ unsigned int Chip8::emulateCycle()
 		return -1; // Max length for code has been reached, end of program
 
 	short instruction = (mMemory[mPc] << 8) | (mMemory[mPc + 1]);
-	switch((instruction & 0xF000) << 12)
+	switch(OP(instruction))
 	{
-		case 0x0 << 12:
-			switch (instruction % 0x0FFF)
+		case 0x0:
+			switch (instruction) // SYS addr is not supported
 			{
-				case 0xE0: // Clear Screen
+				case 0xE0: // Clear the display 00E0
 					clearScreen();
-					SDL_Log("Screen cleared");
+					// SDL_Log("Screen cleared");
 					break;
-				case 0xEE: // RET
+				case 0xEE: // Return from a subroutine 00EE
+					mPc = mStack[mSp];
+					mSp -= 1;
+					// SDL_Log("Returned");
 					break;
 			}
 			break;
-		case 0x1: // JP addr
+		case 0x1: // JP addr 1nnn
+			mPc = NNN(instruction);
+			// SDL_Log("Jumped to %x", instruction & 0x0FFF);
 			break;
-		case 0x2: // CALL addr
+		case 0x2: // CALL addr 2nnn
+			++mSp;
+			mStack[mSp] = mPc;
+			mPc = NNN(instruction);
 			break;
-		case 0x3: // SE Vx, byte
+		case 0x3: // SE Vx, byte 3xkk
+			if (mV[X(instruction)] == KK(instruction))
+				mPc += 2;
 			break;
-		case 0x4: // 
+		case 0x4: // SNE Vx, byte 4xkk
+			if (mV[X(instruction)] != KK(instruction))
+				mPc += 2;
 			break;
-		case 0x5:
+		case 0x5: // SE Vx, Vy 5xy0
+			if (mV[X(instruction)] == mV[Y(instruction)])
+				mPc += 2;
 			break;
 		case 0x6:
 			break;
