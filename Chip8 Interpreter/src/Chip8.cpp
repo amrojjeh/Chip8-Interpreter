@@ -48,32 +48,69 @@ unsigned int Chip8::emulateCycle()
 					break;
 			}
 			break;
-		case 0x1: // JP addr 1nnn
+		case 0x1: //  1nnn - JP addr
 			mPc = NNN(instruction);
 			// SDL_Log("Jumped to %x", instruction & 0x0FFF);
 			break;
-		case 0x2: // CALL addr 2nnn
+		case 0x2: // 2nnn - CALL addr
 			++mSp;
 			mStack[mSp] = mPc;
 			mPc = NNN(instruction);
 			break;
-		case 0x3: // SE Vx, byte 3xkk
+		case 0x3: // 3xkk - SE Vx, byte
 			if (mV[X(instruction)] == KK(instruction))
 				mPc += 2;
 			break;
-		case 0x4: // SNE Vx, byte 4xkk
+		case 0x4: // 4xkk - SNE Vx, byte
 			if (mV[X(instruction)] != KK(instruction))
 				mPc += 2;
 			break;
-		case 0x5: // SE Vx, Vy 5xy0
+		case 0x5: // 5xy0 - SE Vx, Vy
 			if (mV[X(instruction)] == mV[Y(instruction)])
 				mPc += 2;
 			break;
-		case 0x6:
+		case 0x6: // 6xkk - LD Vx, byte
+			mV[X(instruction)] = KK(instruction);
 			break;
-		case 0x7:
+		case 0x7: // ADD Vx, byte
+			mV[X(instruction)] += KK(instruction);
 			break;
 		case 0x8:
+			switch(N(instruction))
+			{
+				case 0: // 8xy0 - LD Vx, Vy
+					mV[X(instruction)] = mV[Y(instruction)];
+					break;
+				case 1: // 8xy1 - OR Vx, Vy
+					mV[X(instruction)] = mV[X(instruction)] | mV[Y(instruction)];
+					break;
+				case 2: // 8xy2 - AND Vx, Vy
+					mV[X(instruction)] = mV[X(instruction)] & mV[Y(instruction)];
+					break;
+				case 3: // 8xy3 - XOR Vx, Vy
+					mV[X(instruction)] = mV[X(instruction)] ^ mV[Y(instruction)];
+					break;
+				case 4: // 8xy4 - ADD Vx, Vy
+					mV[0xF] = (mV[X(instruction)] + mV[Y(instruction)] > 0xFF);
+					mV[X(instruction)] = (mV[X(instruction)] + mV[Y(instruction)]) & 0xFF;
+					break;
+				case 5: // 8xy5 - SUB Vx, Vy
+					mV[0xF] = (mV[X(instruction)] > mV[Y(instruction)]);
+					mV[X(instruction)] -= mV[Y(instruction)];
+					break;
+				case 6: // 8xy6 - SHR Vx {, Vy}
+					mV[0xF] = N(mV[X(instruction)]);
+					mV[X(instruction)] /= 2;
+					break;
+				case 7: // 8xy7 - SUBN Vx, Vy
+					mV[0xF] = (mV[Y(instruction)] > mV[X(instruction)]);
+					mV[X(instruction)] = mV[Y(instruction)] - mV[X(instruction)];
+					break;
+				case 0xE: // 8xyE - SHL Vx {, Vy}
+					mV[0xF] = OP(mV[X(instruction)]);
+					mV[X(instruction)] *= 2;
+					break;
+			}
 			break;
 		case 0x9:
 			break;

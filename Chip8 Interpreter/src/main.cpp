@@ -10,13 +10,12 @@
 int startingTime;
 bool running = true;
 
-int LimitFPS(int Fps)
+void LimitFPS(int Fps)
 {
 	if ((1000 / Fps) > SDL_GetTicks() - startingTime) // 1000 / Fps = Converting Fps to Frames per millisecond
 	{
 		SDL_Delay(1000/Fps - (SDL_GetTicks() - startingTime));
 	}
-	return (1000 / (SDL_GetTicks() - startingTime));
 }
 
 
@@ -27,7 +26,7 @@ int main(int argc, char* argv[])
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Missing ROM", "No ROM has been loaded.", 0);
 		return 1;
 	}
-
+	
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 	// Creating the window
 	SDL_Window* window =  SDL_CreateWindow("Chip8 Emulator", 
@@ -68,13 +67,9 @@ int main(int argc, char* argv[])
 					break;
 			}
 		}
-		if (Chip.emulateCycle() == -1)
-		{
-			SDL_Log("PROGRAM FINISHED");
-			running = false;
-		}
-		printf("FPS: %d\r", LimitFPS(60));
+		Chip.emulateCycle();
 		SDL_UpdateWindowSurface(window);
+		LimitFPS(150);
 	}
 
 	SDL_DestroyWindow(window);
