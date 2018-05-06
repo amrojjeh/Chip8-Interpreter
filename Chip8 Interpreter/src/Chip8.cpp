@@ -1,5 +1,6 @@
 #include <SDL\SDL.h>
-
+#include <time.h>
+#include <stdlib.h>
 #include "Chip8.h"
 
 Chip8::Chip8(SDL_Surface* surface)
@@ -7,6 +8,7 @@ Chip8::Chip8(SDL_Surface* surface)
 	mPc = 0x200;
 	mSp = 0;
 	mSurface = surface;
+	srand(time(0));
 }
 
 // If 0 is returned, then everything went OK
@@ -39,18 +41,15 @@ unsigned int Chip8::emulateCycle()
 			{
 				case 0xE0: // Clear the display 00E0
 					clearScreen();
-					// SDL_Log("Screen cleared");
 					break;
 				case 0xEE: // Return from a subroutine 00EE
 					mPc = mStack[mSp];
 					mSp -= 1;
-					// SDL_Log("Returned");
 					break;
 			}
 			break;
 		case 0x1: //  1nnn - JP addr
 			mPc = NNN(instruction);
-			// SDL_Log("Jumped to %x", instruction & 0x0FFF);
 			break;
 		case 0x2: // 2nnn - CALL addr
 			++mSp;
@@ -58,16 +57,13 @@ unsigned int Chip8::emulateCycle()
 			mPc = NNN(instruction);
 			break;
 		case 0x3: // 3xkk - SE Vx, byte
-			if (mV[X(instruction)] == KK(instruction))
-				mPc += 2;
+			mPc += (mV[X(instruction)] == KK(instruction)) ? 2 : 0;
 			break;
 		case 0x4: // 4xkk - SNE Vx, byte
-			if (mV[X(instruction)] != KK(instruction))
-				mPc += 2;
+			mPc += (mV[X(instruction)] != KK(instruction)) ? 2 : 0;
 			break;
 		case 0x5: // 5xy0 - SE Vx, Vy
-			if (mV[X(instruction)] == mV[Y(instruction)])
-				mPc += 2;
+			mPc += (mV[X(instruction)] == mV[Y(instruction)]) ? 2 : 0;
 			break;
 		case 0x6: // 6xkk - LD Vx, byte
 			mV[X(instruction)] = KK(instruction);
@@ -112,27 +108,55 @@ unsigned int Chip8::emulateCycle()
 					break;
 			}
 			break;
-		case 0x9:
+		case 0x9: // 9xy0 - SNE Vx, Vy
+			mPc += (mV[X(instruction)] != mV[Y(instruction)]) ? 2 : 0;
 			break;
-		case 0xA:
+		case 0xA: // Annn - LD I, addr
+			mI = NNN(instruction);
 			break;
-		case 0xB:
+		case 0xB: // Bnnn - JP V0, addr
+			mPc = NNN(instruction) + mV[0];
 			break;
-		case 0xC:
+		case 0xC: // Cxkk - RND Vx, byte
+			mV[X(instruction)] = (rand() % 0xFF + 1) & KK(instruction);
 			break;
-		case 0xD:
+		case 0xD: // Dxyn - DRW Vx, Vy, nibble
+			makeLevel(instruction);
 			break;
 		case 0xE:
 			break;
 		case 0xF:
 			break;
+		default:
+			SDL_Log("Instruction is non-existant");
 	}
 	mPc += 2;
 	return 0;
 }
 
-void Chip8::clearScreen()
+// Clear the screen
+void Chip8::clearScreen() 
 {
+	mLevel = {0};
 	Uint32 black = SDL_MapRGB(mSurface->format, 0, 0, 0);
 	SDL_FillRect(mSurface, 0, black);
+}
+
+// Size of a sprite: 8xbytes (WidthxHeight)
+void Chip8::drawSprite(short instruction)
+{
+	char rows = N(instruction);
+	char xpos = X(instruction);
+	int ypos = Y(instruction);
+	mV[0xF] = 0;
+	for (char row = 0; row < rows; row++) // Cycle through each row
+	{
+		mV[0xF] = mLevel[xpos][ypos] ? 1 : 0;
+		mLevel[xpos][ypos] = mMemory[mI + row * 8] ? 1 : 0;
+	}
+}
+
+void Chip8::renderLevel()
+{
+	
 }

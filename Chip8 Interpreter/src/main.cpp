@@ -1,11 +1,7 @@
-#include <SDL/SDL.h>
 #include <stdio.h>
 
 #include "Chip8.h"
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 320
-#define WINDOW_FLAGS 0
 
 int startingTime;
 bool running = true;
