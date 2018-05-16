@@ -25,10 +25,10 @@ private:
 	unsigned char mSoundTimer;
 	
 	// EXTRAS
-	unsigned char mMemory[0xFFF];
+	unsigned char mMemory[0xFFF] = {};
 	unsigned short mStack[16];
 	unsigned char mKeys[16];
-	unsigned bool mLevel[WINDOW_WIDTH / RATIO][WINDOW_HEIGHT / RATIO];
+	unsigned char mLevel[WINDOW_WIDTH / RATIO][WINDOW_HEIGHT / RATIO];
 	SDL_Surface* mSurface;
 	void clearScreen();
 	void drawSprite(short instruction); // Transform drawing into the level array

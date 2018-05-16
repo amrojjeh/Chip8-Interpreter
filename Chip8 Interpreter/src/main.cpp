@@ -2,7 +2,6 @@
 
 #include "Chip8.h"
 
-
 int startingTime;
 bool running = true;
 
@@ -50,7 +49,6 @@ int main(int argc, char* argv[])
 		SDL_Log("File could not be loaded...");
 		running = false;
 	}
-	
 	while(running)
 	{
 		while(SDL_PollEvent(&event))
@@ -67,7 +65,7 @@ int main(int argc, char* argv[])
 		SDL_UpdateWindowSurface(window);
 		LimitFPS(150);
 	}
-
+	
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;

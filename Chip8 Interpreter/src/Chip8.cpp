@@ -1,6 +1,7 @@
 #include <SDL\SDL.h>
 #include <time.h>
 #include <stdlib.h>
+#include <cstring>
 #include "Chip8.h"
 
 Chip8::Chip8(SDL_Surface* surface)
@@ -9,6 +10,37 @@ Chip8::Chip8(SDL_Surface* surface)
 	mSp = 0;
 	mSurface = surface;
 	srand(time(0));
+	
+	// ADD CHARACTER SET
+	int fontByteSize = 5;
+	int fontSize = 16;
+	int char0[] = {0xF0, 0x90, 0x90, 0x90, 0xF0};
+	int char1[] = {0x20, 0x60, 0x20, 0x20, 0x70};
+	int char2[] = {0xF0, 0x10, 0xF0, 0x80, 0xF0};
+	int char3[] = {0xF0, 0x10, 0xF0, 0x10, 0xF0};
+	int char4[] = {0x90, 0x90, 0xF0, 0x10, 0x10};
+	int char5[] = {0xF0, 0x80, 0xF0, 0x10, 0xF0};
+	int char6[] = {0xF0, 0x80, 0xF0, 0x90, 0xF0};
+	int char7[] = {0xF0, 0x10, 0x20, 0x40, 0x40};
+	int char8[] = {0xF0, 0x90, 0xF0, 0x90, 0xF0};
+	int char9[] = {0xF0, 0x90, 0xF0, 0x10, 0xF0};
+	int charA[] = {0xF0, 0x90, 0xF0, 0x90, 0x90};
+	int charB[] = {0xE0, 0x90, 0xE0, 0x90, 0xE0};
+	int charC[] = {0xF0, 0x80, 0x80, 0x80, 0xF0};
+	int charD[] = {0xE0, 0x90, 0x90, 0x90, 0xE0};
+	int charE[] = {0xF0, 0x80, 0xF0, 0x80, 0xF0};
+	int charF[] = {0xF0, 0x80, 0xF0, 0x80, 0x80};
+	int* fontSet[16] = {char0, char1, char2, char3, char4, char5, char6, char7, char8, char9, charA, charB, charC, charD, charE, charF};
+	
+	// ADD CHARSET TO MEMORY
+	for (int arr = 0; arr <= fontSize; ++arr)
+	{
+		memcpy(&mMemory[arr + sizeof(fontSet[arr])], &fontSet[arr], sizeof(fontSet[arr])); // TODO: FIX THIS SHIT (NOT COPYING CORRECTLY)
+	}
+	for (int x = 0; x <= 0x200; x++)
+	{
+		SDL_Log("%x ", mMemory[x]);
+	}
 }
 
 // If 0 is returned, then everything went OK
@@ -21,10 +53,11 @@ int Chip8::loadFile(const char* filePath)
 	unsigned char code[CODE_SIZE] = {0};
 	SDL_RWread(file, code, CODE_SIZE, 1);
 	SDL_RWclose(file);
-	
-	for (int x = 0; x < CODE_SIZE; x++)
-		mMemory[mPc + x] = code[x]; // Copy code to the memory
-	
+
+	for (int x = 0; x <= CODE_SIZE; x++)
+	{
+		mMemory[mPc + x] = code[x];
+	}
 	return 0;
 }
 
@@ -41,6 +74,7 @@ unsigned int Chip8::emulateCycle()
 			{
 				case 0xE0: // Clear the display 00E0
 					clearScreen();
+					SDL_Log("Screen cleared");
 					break;
 				case 0xEE: // Return from a subroutine 00EE
 					mPc = mStack[mSp];
@@ -50,6 +84,7 @@ unsigned int Chip8::emulateCycle()
 			break;
 		case 0x1: //  1nnn - JP addr
 			mPc = NNN(instruction);
+			SDL_Log("Jumped");
 			break;
 		case 0x2: // 2nnn - CALL addr
 			++mSp;
@@ -121,7 +156,8 @@ unsigned int Chip8::emulateCycle()
 			mV[X(instruction)] = (rand() % 0xFF + 1) & KK(instruction);
 			break;
 		case 0xD: // Dxyn - DRW Vx, Vy, nibble
-			makeLevel(instruction);
+			drawSprite(instruction);
+			SDL_Log("Sprite drawn");
 			break;
 		case 0xE:
 			break;
@@ -130,6 +166,7 @@ unsigned int Chip8::emulateCycle()
 		default:
 			SDL_Log("Instruction is non-existant");
 	}
+	renderLevel();
 	mPc += 2;
 	return 0;
 }
@@ -137,9 +174,13 @@ unsigned int Chip8::emulateCycle()
 // Clear the screen
 void Chip8::clearScreen() 
 {
-	mLevel = {0};
-	Uint32 black = SDL_MapRGB(mSurface->format, 0, 0, 0);
-	SDL_FillRect(mSurface, 0, black);
+	for (unsigned char x = 0; x < (WINDOW_WIDTH / RATIO); x++)
+	{
+		for (unsigned char y = 0; y < (WINDOW_HEIGHT / RATIO); y++)
+		{
+			mLevel[x][y] = 0;
+		}
+	}
 }
 
 // Size of a sprite: 8xbytes (WidthxHeight)
@@ -147,16 +188,30 @@ void Chip8::drawSprite(short instruction)
 {
 	char rows = N(instruction);
 	char xpos = X(instruction);
-	int ypos = Y(instruction);
+	char ypos = Y(instruction);
 	mV[0xF] = 0;
 	for (char row = 0; row < rows; row++) // Cycle through each row
 	{
-		mV[0xF] = mLevel[xpos][ypos] ? 1 : 0;
-		mLevel[xpos][ypos] = mMemory[mI + row * 8] ? 1 : 0;
+		for (char bit = 1; bit <= 256; bit <<= 1)
+		{
+			char oldPixel = mLevel[xpos][ypos];
+			mLevel[xpos][ypos] = (mMemory[row] & bit) ? 1 : 0;
+			mV[0xF] = (mLevel[xpos][ypos] && oldPixel) ? 1 : 0; // Check for collision
+			xpos++;
+		}
 	}
 }
 
 void Chip8::renderLevel()
 {
-	
+	for (int x = 0; x < WINDOW_WIDTH / RATIO; x++)
+	{
+		for (int y = 0; y < WINDOW_HEIGHT / RATIO; y++)
+		{
+			SDL_Rect pixel = {x * RATIO, y * RATIO, RATIO, RATIO};
+			int colorValue = mLevel[x][y] ? 50 : 0;
+			Uint32 color = SDL_MapRGB(mSurface->format, colorValue, colorValue, colorValue);
+			SDL_FillRect(mSurface, &pixel, color);
+		}
+	}
 }
