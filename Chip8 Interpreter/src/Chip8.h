@@ -25,7 +25,7 @@ private:
 	unsigned char mSoundTimer;
 	
 	// EXTRAS
-	unsigned char mMemory[0xFFF] = {};
+	unsigned char mMemory[0xFFF] = {0};
 	unsigned short mStack[16];
 	unsigned char mKeys[16];
 	unsigned char mLevel[WINDOW_WIDTH / RATIO][WINDOW_HEIGHT / RATIO];
