@@ -8,6 +8,7 @@ Chip8::Chip8(SDL_Surface* surface)
 {
 	mPc = 0x200;
 	mSp = 0;
+	mI = 0;
 	mSurface = surface;
 	srand(time(0));
 	// ADD CHARACTER SET
@@ -150,8 +151,8 @@ unsigned int Chip8::emulateCycle()
 			mV[X(instruction)] = (rand() % 0xFF + 1) & KK(instruction);
 			break;
 		case 0xD: // Dxyn - DRW Vx, Vy, nibble
-			drawSprite(instruction);
 			SDL_Log("Sprite drawn");
+			drawSprite(instruction);
 			break;
 		case 0xE:
 			break;
@@ -181,16 +182,16 @@ void Chip8::clearScreen()
 void Chip8::drawSprite(short instruction)
 {
 	char rows = N(instruction);
-	char xpos = X(instruction);
 	char ypos = Y(instruction);
 	mV[0xF] = 0;
 	for (char row = 0; row < rows; row++) // Cycle through each row
 	{
-		for (char bit = 1; bit <= 256; bit <<= 1)
+		char xpos = X(instruction);
+		for (char bit = 8; bit >= 1; bit -= 1)
 		{
-			char oldPixel = mLevel[xpos][ypos];
-			mLevel[xpos][ypos] = (mMemory[row] & bit) ? 1 : 0;
-			mV[0xF] = (mLevel[xpos][ypos] && oldPixel) ? 1 : 0; // Check for collision
+			char oldPixel = mLevel[xpos][ypos + rows];
+			mLevel[xpos][ypos + row] ^= (mMemory[mI + row] & (1<<bit)) ? 1 : 0;
+			mV[0xF] = (mLevel[xpos][ypos + row] && oldPixel) ? 1 : 0; // Check for collision
 			xpos++;
 		}
 	}
@@ -203,8 +204,8 @@ void Chip8::renderLevel()
 		for (int y = 0; y < WINDOW_HEIGHT / RATIO; y++)
 		{
 			SDL_Rect pixel = {x * RATIO, y * RATIO, RATIO, RATIO};
-			int colorValue = mLevel[x][y] ? 50 : 0;
-			Uint32 color = SDL_MapRGB(mSurface->format, colorValue, colorValue, colorValue);
+			int colorValue = mLevel[x][y] ? 255 : 0;
+			Uint32 color = SDL_MapRGB(mSurface->format, 0, 0, colorValue);
 			SDL_FillRect(mSurface, &pixel, color);
 		}
 	}

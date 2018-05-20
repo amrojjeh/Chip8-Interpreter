@@ -19,14 +19,14 @@ private:
 	unsigned char mSp;
 	
 	// REGISTERS
-	unsigned char mV[16]; // V[0xF] would be a flag
-	unsigned short mI;
-	unsigned char mDelayTimer;
-	unsigned char mSoundTimer;
+	unsigned char mV[16] = {0}; // V[0xF] would be a flag
+	unsigned short mI = 0;
+	unsigned char mDelayTimer = 0;
+	unsigned char mSoundTimer = 0;
 	
 	// EXTRAS
 	unsigned char mMemory[0xFFF] = {0};
-	unsigned short mStack[16];
+	unsigned short mStack[16] = {0};
 	unsigned char mKeys[16];
 	unsigned char mLevel[WINDOW_WIDTH / RATIO][WINDOW_HEIGHT / RATIO];
 	SDL_Surface* mSurface;
