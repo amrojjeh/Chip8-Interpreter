@@ -1,4 +1,3 @@
-#include <SDL\SDL.h>
 #include <time.h>
 #include <stdlib.h>
 #include <cstring>
@@ -13,7 +12,7 @@ Chip8::Chip8(SDL_Surface* surface)
 	srand(time(0));
 	// ADD CHARACTER SET
 	const char FONTSIZE = 16 * 5;
-	char fontSet[FONTSIZE] = {
+	unsigned char fontSet[FONTSIZE] = {
 					0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 					0x20, 0x60, 0x20, 0x20, 0x70, // 1
 					0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -21,7 +20,7 @@ Chip8::Chip8(SDL_Surface* surface)
 					0x90, 0x90, 0xF0, 0x10, 0x10, // 4
 					0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
 					0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-					0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+					0xF0, 0x10, 0x20, 0x40 ,0x40, // 7
 					0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
 					0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
 					0xF0, 0x90, 0xF0, 0x90, 0x90, // A
@@ -167,7 +166,7 @@ unsigned int Chip8::emulateCycle()
 }
 
 // Clear the screen
-void Chip8::clearScreen() 
+void Chip8::clearScreen()
 {
 	for (unsigned char x = 0; x < (WINDOW_WIDTH / RATIO); x++)
 	{
@@ -182,17 +181,18 @@ void Chip8::clearScreen()
 void Chip8::drawSprite(short instruction)
 {
 	char rows = N(instruction);
-	char ypos = Y(instruction);
+	char ypos = mV[Y(instruction)] % (WINDOW_HEIGHT / RATIO);
 	mV[0xF] = 0;
 	for (char row = 0; row < rows; row++) // Cycle through each row
 	{
-		char xpos = X(instruction);
+		char xpos = mV[X(instruction)] % (WINDOW_WIDTH / RATIO);
 		for (char bit = 8; bit >= 1; bit -= 1)
 		{
 			char oldPixel = mLevel[xpos][ypos + rows];
 			mLevel[xpos][ypos + row] ^= (mMemory[mI + row] & (1<<bit)) ? 1 : 0;
 			mV[0xF] = (mLevel[xpos][ypos + row] && oldPixel) ? 1 : 0; // Check for collision
 			xpos++;
+			xpos %=64;
 		}
 	}
 }
